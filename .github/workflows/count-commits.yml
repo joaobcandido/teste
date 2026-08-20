@@ -1,4 +1,4 @@
-name: Contar Commits da Main
+name: Contar Commits a partir do Manifest
 
 on:
   push:
@@ -11,9 +11,32 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Essencial para baixar todo o histórico de commits
+          fetch-depth: 0 # Essencial para baixar todo o histórico
 
-      - name: Contar commits
+      - name: Ler versão do arquivo manifest
+        id: read_manifest
         run: |
-          TOTAL_COMMITS=$(git rev-list --count HEAD)
-          echo "O número total de commits na branch main é: $TOTAL_COMMITS"
+          # Substitua 'version' pela chave correta do seu arquivo .manifest
+          # Exemplo considerando um formato simples de chave=valor ou JSON
+          VERSION=$(grep '^version=' .manifest | cut -d'=' -f2 | tr -d ' "')
+          
+          # Se o seu arquivo for JSON, você pode usar o jq:
+          # VERSION=$(jq -r '.version' .manifest)
+          
+          echo "Versão encontrada: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Contar commits a partir da versão
+        run: |
+          VERSION="${{ steps.read_manifest.outputs.version }}"
+          
+          # Conta os commits entre a tag/versão e o HEAD atual
+          # O uso de '..HEAD' conta os commits após a tag informada
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            TOTAL_COMMITS=$(git rev-list --count $VERSION..HEAD)
+            echo "Número de commits desde a versão $VERSION: $TOTAL_COMMITS"
+          else
+            echo "Aviso: A versão '$VERSION' não foi encontrada como tag ou commit no Git. Contando todos os commits."
+            TOTAL_COMMITS=$(git rev-list --count HEAD)
+            echo "Total geral de commits: $TOTAL_COMMITS"
+          fi
