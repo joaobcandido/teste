@@ -1,32 +1,5 @@
 name: Contar Commits a partir do Manifest
 
-on:
-  push:
-    branches: [ "main" ]
-
-jobs:
-  contar-commits:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout do código
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Essencial para baixar todo o histórico
-
-      - name: Ler versão do arquivo manifest
-        id: read_manifest
-        run: |
-          echo "=== Conteúdo do arquivo .manifest ==="
-          cat .manifest
-          echo "===================================="
-          
-          # Extrai a versão usando o jq para arquivos JSON
-          VERSION=$(jq -r '.version' .manifest)
-          
-          echo "Versão extraída: '$VERSION'"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      name: Contar Commits a partir do Manifest
 
 on:
   push:
