@@ -1,5 +1,4 @@
-name: Contar Commits a partir do Manifest
-
+name: Contar Commits por Versão do Manifest
 
 on:
   push:
@@ -12,30 +11,33 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Essencial para ler todas as tags e histórico
+          fetch-depth: 0
 
-      - name: Ler versão do arquivo manifest
-        id: read_manifest
+      - name: Identificar ponto de mudança da versão
+        id: find_version_point
         run: |
-          # Extrai a versão do arquivo JSON
-          VERSION=$(jq -r '.version' .manifest)
-          echo "Versão lida do arquivo: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Contar commits a partir da versão
-        run: |
-          VERSION="${{ steps.read_manifest.outputs.version }}"
+          # 1. Lê a versão atual do arquivo .manifest
+          CURRENT_VERSION=$(jq -r '.version' .manifest)
+          echo "Versão atual no .manifest: $CURRENT_VERSION"
           
-          # Verifica se a tag existe no repositório
-          if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            echo "A tag $VERSION existe. Contando commits novos..."
-            TOTAL_COMMITS=$(git rev-list --count $VERSION..HEAD)
-            echo "Número de commits desde a versão $VERSION: $TOTAL_COMMITS"
-          else
-            echo "Aviso: A tag '$VERSION' ainda não existe no histórico do Git."
-            echo "Certifique-se de criar a tag localmente e fazer 'git push origin --tags'"
-            
-            # Conta todos os commits caso a tag não exista
+          # 2. Busca o commit mais recente onde o arquivo .manifest continha essa versão
+          # Isso encontra o commit onde a versão atual foi introduzida ou alterada
+          # grep -r procura o conteúdo, e rev-list encontra o primeiro commit com esse conteúdo
+          
+          # Encontra o hash do commit onde a versão atual apareceu pela primeira vez
+          # Se não encontrar (versão nova), ele retorna o commit inicial
+          VERSION_COMMIT=$(git log --reverse -S "\"version\": \"$CURRENT_VERSION\"" --format="%H" .manifest | head -n 1)
+          
+          if [ -z "$VERSION_COMMIT" ]; then
+            echo "Primeira vez desta versão ou erro. Contando todos os commits."
             TOTAL_COMMITS=$(git rev-list --count HEAD)
-            echo "Total geral de commits no histórico: $TOTAL_COMMITS"
+          else
+            echo "Versão $CURRENT_VERSION introduzida no commit: $VERSION_COMMIT"
+            # Conta commits desde aquele commit até o presente
+            TOTAL_COMMITS=$(git rev-list --count $VERSION_COMMIT..HEAD)
+            # Adicionamos +1 para incluir o próprio commit onde a versão foi alterada
+            TOTAL_COMMITS=$((TOTAL_COMMITS + 1))
           fi
+          
+          echo "total_commits=$TOTAL_COMMITS" >> $GITHUB_OUTPUT
+          echo "Número de commits nesta versão: $TOTAL_COMMITS"
