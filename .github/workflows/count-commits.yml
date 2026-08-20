@@ -2,7 +2,7 @@ name: Contar Commits da Main
 
 on:
   push:
-  branches: [ "main" ]
+    branches: [ "main" ]
 
 jobs:
   contar-commits:
