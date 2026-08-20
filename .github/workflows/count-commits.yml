@@ -21,7 +21,7 @@ jobs:
           VERSION=$(grep '^version=' .manifest | cut -d'=' -f2 | tr -d ' "')
           
           # Se o seu arquivo for JSON, você pode usar o jq:
-          # VERSION=$(jq -r '.version' .manifest)
+          VERSION=$(jq -r '.version' .manifest)
           
           echo "Versão encontrada: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
