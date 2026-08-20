@@ -16,13 +16,7 @@ jobs:
       - name: Ler versão do arquivo manifest
         id: read_manifest
         run: |
-          # Substitua 'version' pela chave correta do seu arquivo .manifest
-          # Exemplo considerando um formato simples de chave=valor ou JSON
           VERSION=$(grep '^version=' .manifest | cut -d'=' -f2 | tr -d ' "')
-          
-          # Se o seu arquivo for JSON, você pode usar o jq:
-          VERSION=$(jq -r '.version' .manifest)
-          
           echo "Versão encontrada: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -31,7 +25,6 @@ jobs:
           VERSION="${{ steps.read_manifest.outputs.version }}"
           
           # Conta os commits entre a tag/versão e o HEAD atual
-          # O uso de '..HEAD' conta os commits após a tag informada
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
             TOTAL_COMMITS=$(git rev-list --count $VERSION..HEAD)
             echo "Número de commits desde a versão $VERSION: $TOTAL_COMMITS"
