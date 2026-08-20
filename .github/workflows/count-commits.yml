@@ -1,0 +1,19 @@
+name: Contar Commits da Main
+
+on:
+  push:
+  branches: [ "main" ]
+
+jobs:
+  contar-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Essencial para baixar todo o histórico de commits
+
+      - name: Contar commits
+        run: |
+          TOTAL_COMMITS=$(git rev-list --count HEAD)
+          echo "O número total de commits na branch main é: $TOTAL_COMMITS"
