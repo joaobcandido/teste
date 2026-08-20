@@ -26,16 +26,43 @@ jobs:
           echo "Versão extraída: '$VERSION'"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      name: Contar Commits a partir do Manifest
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  contar-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Essencial para ler todas as tags e histórico
+
+      - name: Ler versão do arquivo manifest
+        id: read_manifest
+        run: |
+          # Extrai a versão do arquivo JSON
+          VERSION=$(jq -r '.version' .manifest)
+          echo "Versão lida do arquivo: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Contar commits a partir da versão
         run: |
           VERSION="${{ steps.read_manifest.outputs.version }}"
           
-          # Conta os commits entre a tag/versão e o HEAD atual
+          # Verifica se a tag existe no repositório
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "A tag $VERSION existe. Contando commits novos..."
             TOTAL_COMMITS=$(git rev-list --count $VERSION..HEAD)
             echo "Número de commits desde a versão $VERSION: $TOTAL_COMMITS"
           else
-            echo "Aviso: A versão '$VERSION' não foi encontrada como tag ou commit no Git. Contando todos os commits."
+            echo "Aviso: A tag '$VERSION' ainda não existe no histórico do Git."
+            echo "Certifique-se de criar a tag localmente e fazer 'git push origin --tags'"
+            
+            # Conta todos os commits caso a tag não exista
             TOTAL_COMMITS=$(git rev-list --count HEAD)
-            echo "Total geral de commits: $TOTAL_COMMITS"
+            echo "Total geral de commits no histórico: $TOTAL_COMMITS"
           fi
